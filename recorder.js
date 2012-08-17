@@ -1,6 +1,6 @@
-// Zadefinuju si tady promenny globalne, aby nepatrily do scopu jQueriho
+// Zadefinuju si tady promenny globalne, aby nepatrily do scopu jQueryho
 // handleru a mohl bych je zkoumat v konzoli.
-var myCodeMirror, myPlaybackMirror, recordedLog, recordingStartTime;
+var myCodeMirror, myPlaybackMirror, recordingTracks, recordingStartTime;
 
 $(function () {
 
@@ -8,34 +8,47 @@ myCodeMirror = CodeMirror.fromTextArea($("#editorArea").get(0));
 myPlaybackMirror = CodeMirror.fromTextArea($("#playbackArea").get(0),
                                            {readOnly: true});
 
-function captureCurrentState () {
-    return { bufferContents: myCodeMirror.getValue(),
-             cursorPosition: myCodeMirror.getCursor(),
-             selectionRange: { from: myCodeMirror.getCursor(true),
-                               to: myCodeMirror.getCursor(false) },
-             scrollPosition: myCodeMirror.getScrollInfo() };
-};
+// The things I track and how to compute and set them.
+var tracking = { bufferContents:
+                 { compute: function () { return myCodeMirror.getValue();},
+                   set: function (value) { myPlaybackMirror.setValue(value);}},
+                 cursorPosition:
+                 { compute: function () { return myCodeMirror.getCursor();},
+                   set: function (value) { myPlaybackMirror.setCursor(value);}},
+                 selectionRange:
+                 { compute: function () {
+                     return { from: myCodeMirror.getCursor(true),
+                              to: myCodeMirror.getCursor(false)};},
+                   set: function (value) {
+                       myPlaybackMirror.setSelection(value.from, value.to);}},
+                 scrollPosition:
+                 { compute: function () { return myCodeMirror.getScrollInfo();},
+                   set: function (value) {
+                      var destination = myPlaybackMirror.getScrollInfo();
+                      myPlaybackMirror.scrollTo(value.x / value.width * destination.width,
+                                                value.y / value.height * destination.height);}}};
 
 $("#startButton").click(function () {
-    recordedLog = [];
+    recordingTracks = {};
     recordingStartTime = new Date();
 
-    // Tady bychom mohli delat to same jako v recordCurrentState,
-    // ale potom by prvni zaznam v recordedLog mel nenulovy cas
-    // a tudiz by nebyl pro interval mezi 0 a tim casem definovany
-    // zadny stav.
-    var initialState = captureCurrentState();
-    initialState.time = 0;
-
-    recordedLog.push(initialState);
+    $.each(tracking, function (name, methods) {
+        recordingTracks[name] = [];
+        recordingTracks[name].push({ time: 0,
+                                     value: methods.compute()});
+    });
 });
 
 function recordCurrentState() {
-    var currentState = captureCurrentState();
-    currentState.time = new Date() - recordingStartTime;
-
-    recordedLog.push(currentState);
-};    
+    $.each(tracking, function (name, methods) {
+        var ourTrack = recordingTracks[name];
+        var currentState = methods.compute();
+        if (!_.isEqual(currentState, _.last(ourTrack).value)) {
+            ourTrack.push({ time: new Date() - recordingStartTime,
+                            value: currentState});
+        };
+    });
+};
 
 // Timhle odchytime zatim vsechny aktivity CodeMirror bufferu,
 // ktere nas zajimaji.
@@ -43,33 +56,22 @@ myCodeMirror.setOption("onCursorActivity", recordCurrentState);
 myCodeMirror.setOption("onScroll", recordCurrentState);
 
 $("#playButton").click(function () {
+    // This doesn't seem to set the focus of the playback CodeMirror
+    // buffer correctly.
     $("#playbackArea").get(0).focus();
-    $.map(recordedLog, function (event) {
-        setTimeout(function () {
-            // Opakovany volani menici stav CodeMirroru muzou bejt takhle
-            // zabaleny do jedny operace, aby nemusel prepocitavat vzhled
-            // v tech mezistavech. Operation bere funkci, ale namisto toho,
-            // aby vratilo tu agregovanou, tak ji jeste rovnou zavola, takze
-            // se to jeste cele musi obalit do lambdy.
-            myPlaybackMirror.operation(function () {
-                // Tohle je asi jedina vec, kterou nechceme setovat zbytecne.
-                if (myPlaybackMirror.getValue() !== event.bufferContents) {
-                    myPlaybackMirror.setValue(event.bufferContents);
-                }
-                myPlaybackMirror.setCursor(event.cursorPosition);
-                myPlaybackMirror.setSelection(event.selectionRange.from,
-                                              event.selectionRange.to);
-                myPlaybackMirror.scrollTo(event.scrollPosition.x,
-                                          event.scrollPosition.y);});},
-                   event.time);});
+    $.each(recordingTracks, function (name, track) {
+        $.map(track, function (event) {
+            setTimeout(function () {
+                tracking[name].set(event.value);},
+                       event.time);});});
 });
 
 $("#dumpButton").click(function () {
-    $("#dumpArea").val(JSON.stringify(recordedLog, undefined, 2));
+    $("#dumpArea").val(JSON.stringify(recordingTracks, undefined, 2));
 });
 
 $("#parseButton").click(function () {
-    recordedLog = JSON.parse($("#dumpArea").val());
+    recordingTracks = JSON.parse($("#dumpArea").val());
 });
 
 });
