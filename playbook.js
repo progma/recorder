@@ -12,4 +12,7 @@ var playbook = { bufferContents:
                  function (value, targetMirror) {
                      var destination = targetMirror.getScrollInfo();
                      targetMirror.scrollTo(value.x / value.width * destination.width,
-                                           value.y / value.height * destination.height);}};
+                                           value.y / value.height * destination.height);},
+                 evaluatedCode:
+                 function (value) {
+                     eval(value);}};

@@ -22,6 +22,7 @@ var recordingSources = { bufferContents:
 
 
 $("#startButton").click(function () {
+    myCodeMirror.focus();
     recordingTracks = {};
     recordingStartTime = new Date();
 
@@ -30,6 +31,7 @@ $("#startButton").click(function () {
         recordingTracks[name].push({ time: 0,
                                      value: record()});
     });
+    recordingTracks['evaluatedCode'] = [];
 });
 
 function recordCurrentState() {
@@ -48,10 +50,16 @@ function recordCurrentState() {
 myCodeMirror.setOption("onCursorActivity", recordCurrentState);
 myCodeMirror.setOption("onScroll", recordCurrentState);
 
+// Eval nemerime pri eventech, ale sbirame pri kliknuti tlacitka 'Eval!'.
+$("#evalButton").click(function () {
+    var currentCode = myCodeMirror.getValue();
+    recordingTracks['evaluatedCode'].push({ time: new Date() - recordingStartTime,
+                                            value: currentCode });
+    eval(currentCode);
+});
+
 $("#playButton").click(function () {
-    // This doesn't seem to set the focus of the playback CodeMirror
-    // buffer correctly.
-    $("#playbackArea").get(0).focus();
+    myPlaybackMirror.focus();
     $.each(recordingTracks, function (name, track) {
         $.map(track, function (event) {
             setTimeout(function () {
