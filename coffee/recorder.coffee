@@ -49,12 +49,12 @@ $ ->
         ourTrack.push
           time: new Date() - recordingStartTime
           value: currentState
-  
+
   # Timhle odchytime zatim vsechny aktivity CodeMirror bufferu,
   # ktere nas zajimaji.
   myCodeMirror.setOption 'onCursorActivity', recordCurrentState
   myCodeMirror.setOption 'onScroll', recordCurrentState
-  
+
   # Eval nemerime pri eventech, ale sbirame pri kliknuti tlacitka 'Eval!'.
   $('#evalButton').click ->
     currentCode = myCodeMirror.getValue()
