@@ -9,40 +9,33 @@ myPlaybackMirror = CodeMirror.fromTextArea($("#playbackArea").get(0),
                                            {readOnly: true});
 
 // The things I track and how to compute and set them.
-var tracking = { bufferContents:
-                 { compute: function () { return myCodeMirror.getValue();},
-                   set: function (value) { myPlaybackMirror.setValue(value);}},
-                 cursorPosition:
-                 { compute: function () { return myCodeMirror.getCursor();},
-                   set: function (value) { myPlaybackMirror.setCursor(value);}},
-                 selectionRange:
-                 { compute: function () {
-                     return { from: myCodeMirror.getCursor(true),
-                              to: myCodeMirror.getCursor(false)};},
-                   set: function (value) {
-                       myPlaybackMirror.setSelection(value.from, value.to);}},
-                 scrollPosition:
-                 { compute: function () { return myCodeMirror.getScrollInfo();},
-                   set: function (value) {
-                      var destination = myPlaybackMirror.getScrollInfo();
-                      myPlaybackMirror.scrollTo(value.x / value.width * destination.width,
-                                                value.y / value.height * destination.height);}}};
+var recordingSources = { bufferContents:
+                         function () { return myCodeMirror.getValue();},
+                         cursorPosition:
+                         function () { return myCodeMirror.getCursor();},
+                         selectionRange:
+                         function () {
+                             return { from: myCodeMirror.getCursor(true),
+                                      to: myCodeMirror.getCursor(false)};},
+                         scrollPosition:
+                         function () { return myCodeMirror.getScrollInfo();} };
+
 
 $("#startButton").click(function () {
     recordingTracks = {};
     recordingStartTime = new Date();
 
-    $.each(tracking, function (name, methods) {
+    $.each(recordingSources, function (name, record) {
         recordingTracks[name] = [];
         recordingTracks[name].push({ time: 0,
-                                     value: methods.compute()});
+                                     value: record()});
     });
 });
 
 function recordCurrentState() {
-    $.each(tracking, function (name, methods) {
+    $.each(recordingSources, function (name, record) {
         var ourTrack = recordingTracks[name];
-        var currentState = methods.compute();
+        var currentState = record();
         if (!_.isEqual(currentState, _.last(ourTrack).value)) {
             ourTrack.push({ time: new Date() - recordingStartTime,
                             value: currentState});
@@ -62,7 +55,7 @@ $("#playButton").click(function () {
     $.each(recordingTracks, function (name, track) {
         $.map(track, function (event) {
             setTimeout(function () {
-                tracking[name].set(event.value);},
+                playbook[name](event.value, myPlaybackMirror);},
                        event.time);});});
 });
 
