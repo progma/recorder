@@ -72,15 +72,15 @@ $ ->
         value: currentCode
     playbook['evaluatedCode'] currentCode, turtleDiv: $('#turtleSpace').get 0
 
+  playNamedValue = (name, value) ->
+    playbook[name](value, { codeMirror: myPlaybackMirror
+                          , turtleDiv: $('#turtleSpace').get 0 })
+
   $('#playButton').click ->
     myPlaybackMirror.focus()
     $.each recordingTracks, (name, track) ->
       $.map track, (event) ->
-        setTimeout ->
-            playbook[name] event.value,
-                           { codeMirror: myPlaybackMirror
-                           , turtleDiv: $('#turtleSpace').get 0 }
-          , event.time
+        setTimeout playNamedValue, event.time, name, event.value
 
   $('#dumpButton').click ->
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
