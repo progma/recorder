@@ -25,20 +25,20 @@ recordingSources =
 
 $ ->
 
-  myCodeMirror = CodeMirror.fromTextArea($('#editorArea').get(0))
-  myPlaybackMirror = CodeMirror.fromTextArea($('#playbackArea').get(0),
-                                             readOnly: true)
+  myCodeMirror = CodeMirror.fromTextArea $('#editorArea').get 0
+  myPlaybackMirror = CodeMirror.fromTextArea $('#playbackArea').get 0,
+                                             readOnly: true
 
   $('#startButton').click ->
     if recordingNow
-      unless confirm('''You will lose your current recording by starting anew.
-                        Are you sure?''')
+      unless confirm '''You will lose your current recording by starting anew.
+                        Are you sure?'''
         return
     myCodeMirror.focus()
     recordingTracks = {}
     recordingStartTime = new Date()
     recordingNow = on
-    $('#recordingStatus').text('recording!')
+    $('#recordingStatus').text 'recording!'
 
     $.each recordingSources, (name, record) ->
       recordingTracks[name] = []
@@ -76,14 +76,13 @@ $ ->
     myPlaybackMirror.focus()
     $.each recordingTracks, (name, track) ->
       $.map track, (event) ->
-        setTimeout (->
-          playbook[name] event.value, myPlaybackMirror),
-          event.time
+        setTimeout -> playbook[name] event.value, myPlaybackMirror
+                 , event.time
 
   $('#dumpButton').click ->
-    $('#dumpArea').val JSON.stringify(recordingTracks, `undefined`, 2)
+    $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
 
   $('#parseButton').click ->
-    if confirm('''Parsing in a new script will delete the old one.
-                  Are you sure?''')
-      recordingTracks = JSON.parse($('#dumpArea').val())
+    if confirm '''Parsing in a new script will delete the old one.
+                  Are you sure?'''
+      recordingTracks = JSON.parse $('#dumpArea').val()
