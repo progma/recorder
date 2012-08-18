@@ -79,7 +79,7 @@ $ ->
         setTimeout ->
             playbook[name] event.value,
                            { codeMirror: myPlaybackMirror
-                             turtleDiv: $('#turtleSpace').get 0 }
+                           , turtleDiv: $('#turtleSpace').get 0 }
           , event.time
 
   $('#dumpButton').click ->
