@@ -70,14 +70,19 @@ $ ->
       recordingTracks['evaluatedCode'].push
         time: new Date() - recordingStartTime
         value: currentCode
-    playbook['evaluatedCode'] currentCode, $('#turtleSpace').get(0)
+    playbook['evaluatedCode'] currentCode, $('#turtleSpace').get 0
 
   $('#playButton').click ->
     myPlaybackMirror.focus()
     $.each recordingTracks, (name, track) ->
       $.map track, (event) ->
-        setTimeout -> playbook[name] event.value, myPlaybackMirror
-                 , event.time
+        setTimeout ->
+          playbook[name] event.value
+                       , if name == 'evaluatedCode'
+                           $('#turtleSpace').get 0
+                         else
+                           myPlaybackMirror
+        , event.time
 
   $('#dumpButton').click ->
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
