@@ -5,6 +5,7 @@ myCodeMirror = undefined
 myPlaybackMirror = undefined
 recordingTracks = undefined
 recordingStartTime = undefined
+recordingNow = off
 
 # The things I track and how to compute them.
 recordingSources =
@@ -29,9 +30,15 @@ $ ->
                                              readOnly: true)
 
   $('#startButton').click ->
+    if recordingNow
+      unless confirm('''You will lose your current recording by starting anew.
+                        Are you sure?''')
+        return
     myCodeMirror.focus()
     recordingTracks = {}
     recordingStartTime = new Date()
+    recordingNow = on
+    $('#recordingStatus').text('recording!')
 
     $.each recordingSources, (name, record) ->
       recordingTracks[name] = []
@@ -42,13 +49,14 @@ $ ->
     recordingTracks['evaluatedCode'] = []
 
   recordCurrentState = ->
-    $.each recordingSources, (name, record) ->
-      ourTrack = recordingTracks[name]
-      currentState = record()
-      unless _.isEqual(currentState, _.last(ourTrack).value)
-        ourTrack.push
-          time: new Date() - recordingStartTime
-          value: currentState
+    if recordingNow
+      $.each recordingSources, (name, record) ->
+        ourTrack = recordingTracks[name]
+        currentState = record()
+        unless _.isEqual(currentState, _.last(ourTrack).value)
+          ourTrack.push
+            time: new Date() - recordingStartTime
+            value: currentState
 
   # Timhle odchytime zatim vsechny aktivity CodeMirror bufferu,
   # ktere nas zajimaji.
@@ -58,10 +66,11 @@ $ ->
   # Eval nemerime pri eventech, ale sbirame pri kliknuti tlacitka 'Eval!'.
   $('#evalButton').click ->
     currentCode = myCodeMirror.getValue()
-    recordingTracks['evaluatedCode'].push
-      time: new Date() - recordingStartTime
-      value: currentCode
-    playbook['evaluatedCode'] currentCode
+    if recordingNow
+      recordingTracks['evaluatedCode'].push
+        time: new Date() - recordingStartTime
+        value: currentCode
+    playbook['evaluatedCode'] currentCode, $('#turtleSpace').get(0)
 
   $('#playButton').click ->
     myPlaybackMirror.focus()
@@ -75,4 +84,6 @@ $ ->
     $('#dumpArea').val JSON.stringify(recordingTracks, `undefined`, 2)
 
   $('#parseButton').click ->
-    recordingTracks = JSON.parse($('#dumpArea').val())
+    if confirm('''Parsing in a new script will delete the old one.
+                  Are you sure?''')
+      recordingTracks = JSON.parse($('#dumpArea').val())

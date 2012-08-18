@@ -14,8 +14,8 @@ playbook =
     targetMirror.scrollTo value.x / value.width * destination.width,
                           value.y / value.height * destination.height
 
-  evaluatedCode: (value) ->
-    eval value
+  evaluatedCode: (value, turtleDiv) ->
+    turtle.run value, turtleDiv
 
 (exports ? this).playbook =
   playbook: playbook
