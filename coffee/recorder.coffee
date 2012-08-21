@@ -29,7 +29,7 @@ recordingSources =
 
 $ ->
   if EVALUATION_CONTEXT == "turtle3d"
-    turtle3d.init $('#turtleSpace').get 0
+    $('#turtleSpace').append $('<canvas>', id: 'turtleCanvas')
 
   myCodeMirror = CodeMirror.fromTextArea $('#editorArea').get 0
   myPlaybackMirror = CodeMirror.fromTextArea $('#playbackArea').get(0),
@@ -79,6 +79,7 @@ $ ->
         value: currentCode
     playbook['evaluatedCode'] currentCode,
                               turtleDiv: $('#turtleSpace').get(0)
+                              turtle3dCanvas: $('#turtleCanvas').get(0)
                               evaluationContext: EVALUATION_CONTEXT
 
   $('#nextButton').add('#prevButton').click ->
@@ -95,6 +96,7 @@ $ ->
           playbook[name] event.value,
                          codeMirror: myPlaybackMirror
                          turtleDiv: $('#turtleSpace').get(0)
+                         turtle3dCanvas: $('#turtleCanvas').get(0)
                          evaluationContext: EVALUATION_CONTEXT
         setTimeout playTheValue, event.time
 

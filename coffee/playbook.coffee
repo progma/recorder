@@ -19,8 +19,11 @@ playbook =
       environment.evaluationContext = "turtle2d"
 
     switch environment.evaluationContext
-      when "turtle2d" then turtle.run value, environment.turtleDiv
-      when "turtle3d" then turtle3d.run value
+      when "turtle2d"
+        turtle.run value, environment.turtleDiv
+      when "turtle3d"
+        turtle3d.init environment.turtle3dCanvas
+        turtle3d.run value
 
 
 (exports ? this).playbook =
