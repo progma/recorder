@@ -1,6 +1,10 @@
 root = exports ? this
 playbook = root.playbook.playbook
 
+# Set this to the meaning that Eval! should have. Currently supported
+# values inclue 'turtle2d' and 'turtle3d'.
+EVALUATION_CONTEXT = "turtle3d"
+
 myCodeMirror = undefined
 myPlaybackMirror = undefined
 recordingTracks = undefined
@@ -24,8 +28,11 @@ recordingSources =
 
 
 $ ->
+  if EVALUATION_CONTEXT == "turtle3d"
+    turtle3d.init $('#turtleSpace').get 0
+
   myCodeMirror = CodeMirror.fromTextArea $('#editorArea').get 0
-  myPlaybackMirror = CodeMirror.fromTextArea $('#playbackArea').get 0,
+  myPlaybackMirror = CodeMirror.fromTextArea $('#playbackArea').get(0),
                                              readOnly: true
 
   $('#startButton').click ->
@@ -70,7 +77,9 @@ $ ->
       recordingTracks['evaluatedCode'].push
         time: new Date() - recordingStartTime
         value: currentCode
-    playbook['evaluatedCode'] currentCode, turtleDiv: $('#turtleSpace').get 0
+    playbook['evaluatedCode'] currentCode,
+                              turtleDiv: $('#turtleSpace').get(0)
+                              evaluationContext: EVALUATION_CONTEXT
 
   $('#nextButton').add('#prevButton').click ->
     if recordingNow
@@ -83,8 +92,10 @@ $ ->
     $.each recordingTracks, (name, track) ->
       $.map track, (event) ->
         playTheValue = ->
-          playbook[name](event.value, { codeMirror: myPlaybackMirror
-                                      , turtleDiv: $('#turtleSpace').get 0 })
+          playbook[name] event.value,
+                         codeMirror: myPlaybackMirror
+                         turtleDiv: $('#turtleSpace').get(0)
+                         evaluationContext: EVALUATION_CONTEXT
         setTimeout playTheValue, event.time
 
   $('#dumpButton').click ->
