@@ -24,7 +24,6 @@ recordingSources =
 
 
 $ ->
-
   myCodeMirror = CodeMirror.fromTextArea $('#editorArea').get 0
   myPlaybackMirror = CodeMirror.fromTextArea $('#playbackArea').get 0,
                                              readOnly: true
@@ -47,6 +46,7 @@ $ ->
         value: record()
 
     recordingTracks['evaluatedCode'] = []
+    recordingTracks['buttonPressed'] = []
 
   recordCurrentState = ->
     if recordingNow
@@ -71,6 +71,12 @@ $ ->
         time: new Date() - recordingStartTime
         value: currentCode
     playbook['evaluatedCode'] currentCode, turtleDiv: $('#turtleSpace').get 0
+
+  $('#nextButton').add('#prevButton').click ->
+    if recordingNow
+      recordingTracks['buttonPressed'].push
+        time: new Date() - recordingStartTime
+        value: this.id
 
   $('#playButton').click ->
     myPlaybackMirror.focus()
