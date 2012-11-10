@@ -70,8 +70,9 @@ $ ->
   myCodeMirror.setOption 'onCursorActivity', recordCurrentState
   myCodeMirror.setOption 'onScroll', recordCurrentState
 
-  # Eval nemerime pri eventech, ale sbirame pri kliknuti tlacitka 'Eval!'.
-  $('#evalButton').click ->
+  # Eval nemerime pri eventech, ale sbirame pri kliknuti tlacitka 'Eval!'
+  # anebo klavesove zkratky Alt-C.
+  evalCode = ->
     currentCode = myCodeMirror.getValue()
     if recordingNow
       recordingTracks['evaluatedCode'].push
@@ -81,6 +82,9 @@ $ ->
                               turtleDiv: $('#turtleSpace').get(0)
                               turtle3dCanvas: $('#turtleCanvas').get(0)
                               evaluationContext: EVALUATION_CONTEXT
+
+  $('#evalButton').click evalCode
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_c', evalCode
 
   $('#nextButton').add('#prevButton').click ->
     if recordingNow
