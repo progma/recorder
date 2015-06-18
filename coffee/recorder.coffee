@@ -2,14 +2,15 @@ root = exports ? this
 playbook = root.playbook.playbook
 
 # Set this to the meaning that Eval! should have. Currently supported
-# values inclue 'turtle2d' and 'turtle3d'.
-EVALUATION_CONTEXT = "turtle3d"
+# values include 'turtle2d' and 'turtle3d'.
+EVALUATION_CONTEXT = "turtle2d"
 
 myCodeMirror = undefined
 myPlaybackMirror = undefined
 recordingTracks = undefined
 recordingStartTime = undefined
 recordingNow = off
+checkboxCount = 0
 
 # The things I track and how to compute them.
 recordingSources =
@@ -106,8 +107,71 @@ $ ->
 
   $('#dumpButton').click ->
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
+		
 
   $('#parseButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
       recordingTracks = JSON.parse $('#dumpArea').val()
+  
+  $('#listButton').click ->
+    eventHolder = []
+    for own key of recordingTracks 
+      for i in recordingTracks[key]
+        j = {
+          name: key
+          time: i.time
+          value: i.value
+        }
+        eventHolder.push j
+    eventHolder.sort (a,b) -> return if a.time > b.time then 1 else -1
+    for j in eventHolder
+        str = JSON.stringify j, `undefined`, 2
+        checkboxCount++
+        $('#listOfEvents').append ('<li id="item' + checkboxCount + '"><input type="checkbox" id="checkbox' + 
+        checkboxCount + '">' + str + '</li>')
+
+  $('#checkButton').click ->
+    from = $('#spinnerFrom').spinner "value"
+    to = $('#spinnerTo').spinner "value"
+    from = if from == null then 1 else from
+    to = if to == null then checkboxCount else to
+    for i in [from..to]
+      name = '#checkbox' + i
+      $(name).prop "checked", true
+
+  $('#uncheckButton').click ->   
+    from = $('#spinnerFrom').spinner "value"
+    to = $('#spinnerTo').spinner "value"
+    from = if from == null then 1 else from
+    to = if to == null then checkboxCount else to
+    for i in [from..to]
+      name = '#checkbox' + i
+      $(name).prop "checked", false
+
+  $('#shiftButton').click ->
+    shift = $('#spinnerShift').spinner "value"
+    for i in [1..checkboxCount]
+      checkboxName = '#checkbox' + i
+      if $(checkboxName).prop "checked"
+        itemName = '#item' + i
+        content = JSON.parse $(itemName).text()
+        content.time += shift
+        $(itemName).html '<input type="checkbox" id="checkbox'+i+'">'+JSON.stringify content, `undefined`, 2
+        $(checkboxName).prop "checked", true
+
+  $('#parsebackButton').click ->
+    if confirm '''Parsing in a new script will delete the old one.
+                  Are you sure?'''
+      newRecordingTracks = {}
+      for i in [1..checkboxCount]
+        itemName = '#item' + i
+        content = JSON.parse $(itemName).text()
+        if !(content.name of newRecordingTracks)
+          newRecordingTracks[content.name] = []
+        newRecordingTracks[content.name].push
+          time: content.time
+          value: content.value
+      recordingTracks = newRecordingTracks
+
+
