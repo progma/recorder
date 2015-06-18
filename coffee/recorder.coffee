@@ -108,12 +108,14 @@ $ ->
   $('#dumpButton').click ->
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
 		
-
   $('#parseButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
       recordingTracks = JSON.parse $('#dumpArea').val()
   
+# new stuff from here 
+  
+# This method produces a list of all events sorted by time 
   $('#listButton').click ->
     eventHolder = []
     for own key of recordingTracks 
@@ -131,6 +133,8 @@ $ ->
         $('#listOfEvents').append ('<li id="item' + checkboxCount + '"><input type="checkbox" id="checkbox' + 
         checkboxCount + '">' + str + '</li>')
 
+# This method checks events in the range given by the spinners
+# if the left resp. right boundary is not given, prefix resp. suffix of the list is selected
   $('#checkButton').click ->
     from = $('#spinnerFrom').spinner "value"
     to = $('#spinnerTo').spinner "value"
@@ -140,6 +144,7 @@ $ ->
       name = '#checkbox' + i
       $(name).prop "checked", true
 
+#Same as previous but for unchecking
   $('#uncheckButton').click ->   
     from = $('#spinnerFrom').spinner "value"
     to = $('#spinnerTo').spinner "value"
@@ -149,17 +154,40 @@ $ ->
       name = '#checkbox' + i
       $(name).prop "checked", false
 
+# This shift method shifts the times leaving the events potentially assorted
+#  $('#shiftButton').click ->
+#    shift = $('#spinnerShift').spinner "value"
+#    for i in [1..checkboxCount]
+#      checkboxName = '#checkbox' + i
+#      if $(checkboxName).prop "checked"
+#        itemName = '#item' + i
+#        content = JSON.parse $(itemName).text()
+#        content.time += shift
+#        $(itemName).html '<input type="checkbox" id="checkbox'+i+'">'+JSON.stringify content, `undefined`, 2
+#        $(checkboxName).prop "checked", true
+#
+
+#This shift method sorts the events by time
   $('#shiftButton').click ->
     shift = $('#spinnerShift').spinner "value"
+    eventHolder = []
     for i in [1..checkboxCount]
       checkboxName = '#checkbox' + i
+      itemName = '#item' + i
+      content = JSON.parse $(itemName).text()
       if $(checkboxName).prop "checked"
-        itemName = '#item' + i
-        content = JSON.parse $(itemName).text()
         content.time += shift
-        $(itemName).html '<input type="checkbox" id="checkbox'+i+'">'+JSON.stringify content, `undefined`, 2
-        $(checkboxName).prop "checked", true
-
+      eventHolder.push content
+    eventHolder.sort (a,b) -> return if a.time > b.time then 1 else -1
+    $('#listOfEvents').empty()
+    checkboxCount = 0
+    for j in eventHolder
+        str = JSON.stringify j, `undefined`, 2
+        checkboxCount++
+        $('#listOfEvents').append ('<li id="item' + checkboxCount + '"><input type="checkbox" id="checkbox' + 
+        checkboxCount + '">' + str + '</li>')
+        
+#This method parses the changes back into recordingTracks 
   $('#parsebackButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
