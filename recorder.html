@@ -17,8 +17,16 @@
     <script src="js/playbook.js"></script>
     <script src="js/recorder.js"></script>
 	<script src="jquery-ui-1.11.4/jquery-ui.js"></script>
-    <style> body { max-width: 800px; margin-left: auto; margin-right: auto; }</style>
-  	<style> #listOfEvents { max-height: 300px; overflow: scroll } </style>
+
+    <style> 
+		body { max-width: 800px; margin-left: auto; margin-right: auto; }
+  	 	#eventDiv { max-height: 500px; overflow: scroll }
+  	 	#tableOfEvents { max-height: 300px; overflow: scroll }
+	 	.value {text-align: left}
+    table, tr, td {border: 1px solid black}
+		td {padding: 6px; text-align: center}
+	 	table {border-collapse: collapse} 
+	</style>
   
   </head>
   <body>
@@ -33,26 +41,40 @@
     <input id="playButton" type="button" value="Play!"/>
     <textarea id="playbackArea"></textarea>
     
+   
     <input id="listButton" type="button" value="Dump list!"/>
-	<input id="parsebackButton" type="button" value="Parse list!"/>
-	<br/>	
-	<input id="checkButton" type="button" value="Check"/> 
-	or
-	<input id="uncheckButton" type="button" value="Uncheck"/>
-	lines from <input id="spinnerFrom"> to <input id="spinnerTo">
-	<br />
-	<input id="shiftButton" type="button" value="Shift">
-	selected lines by <input id="spinnerShift"> miliseconds
-	<script> $( "#spinnerTo" ).spinner(); </script>
-	<script> $( "#spinnerFrom" ).spinner(); </script>
-	<script> $( "#spinnerShift" ).spinner(); </script>
-	<br />
-	<ol id="listOfEvents">
-	</ol>
-	
-	<input id="dumpButton" type="button" value="Dump!"/>
+    <input id="parsebackButton" type="button" value="Parse list!"/>
+    <br/>	
+    <input id="checkButton" type="button" value="Check"/> 
+    or
+    <input id="uncheckButton" type="button" value="Uncheck"/>
+    lines from <input id="spinnerFrom"> to <input id="spinnerTo">
+    <br />
+    <input id="deleteButton" type="button" value="Delete"> selected lines or
+    <input id="shiftButton" type="button" value="Shift"> them by <input id="spinnerShift"> miliseconds
+    <br />
+    <input id="insertButton" type="button" value="Insert current track"> 
+    at time <input id="spinnerInsert">
+    
+    <script> 
+      $( "#spinnerTo" ).spinner();
+      $( "#spinnerFrom" ).spinner();
+      $( "#spinnerShift" ).spinner();
+      $( "#spinnerInsert" ).spinner();
+    </script>
+    
+    <br />
+    <br />
+    <div id = "eventDiv">
+      <table id="tableOfEvents">
+      <tr><td>No.</td><td>Selected</td><td>Time</td><td>Type of event</td><td>Value</td></tr>
+      </table>
+	  </div>
+<!--	
+  <input id="dumpButton" type="button" value="Dump!"/>
     <input id="parseButton" type="button" value="Parse!"/>
     <br />
     <textarea id="dumpArea" rows="25" cols="50"></textarea>
+  --!>
   </body>
 </html>

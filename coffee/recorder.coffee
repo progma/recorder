@@ -10,6 +10,9 @@ myPlaybackMirror = undefined
 recordingTracks = undefined
 recordingStartTime = undefined
 recordingNow = off
+
+#new global vars, array for events regardless of type and number of them
+eventHolder = []
 checkboxCount = 0
 
 # The things I track and how to compute them.
@@ -112,94 +115,132 @@ $ ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
       recordingTracks = JSON.parse $('#dumpArea').val()
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
   
 # new stuff from here 
-  
-# This method produces a list of all events sorted by time 
-  $('#listButton').click ->
-    eventHolder = []
-    for own key of recordingTracks 
-      for i in recordingTracks[key]
-        j = {
-          name: key
-          time: i.time
-          value: i.value
-        }
-        eventHolder.push j
+
+
+#normalisation function for the eventHolder
+  normaliseEventHolder = ->
     eventHolder.sort (a,b) -> return if a.time > b.time then 1 else -1
-    for j in eventHolder
-        str = JSON.stringify j, `undefined`, 2
-        checkboxCount++
-        $('#listOfEvents').append ('<li id="item' + checkboxCount + '"><input type="checkbox" id="checkbox' + 
-        checkboxCount + '">' + str + '</li>')
 
-# This method checks events in the range given by the spinners
+#conversion functions between recordingTracks and eventHolder
+  recordingTracksToEventHolder = ->
+    eventHolder = []
+    for own key of recordingTracks
+        for event in recordingTracks[key]
+          eventHolder.push
+            name: key
+            time: event.time
+            value: event.value
+    normaliseEventHolder()
+
+  eventHolderToRecordingTracks = ->
+    recordingTracks = {}
+    for event in eventHolder
+      if !(event.name of recordingTracks)
+        recordingTracks[event.name] = []
+      recordingTracks[event.name].push
+        time: event.time
+        value: event.value
+
+#function for creating the html list of events
+  outputListOfEvents = ->
+    $('#tableOfEvents').empty()
+    $('<tr><td>No.</td><td>Selected</td><td>Time</td>
+      <td>Type of event</td><td>Value</td></tr>').appendTo $('#tableOfEvents')
+    checkboxCount = 0
+    for event in eventHolder
+          checkboxCount++
+          newRow = $('<tr>')
+          newRow.append $('<td>' + checkboxCount + '</td>')
+          newRow.append $('<td>').append $('<input>',
+            type: "checkbox"
+            id: "checkbox" + checkboxCount
+            )
+          newRow.append $('<td>' + event.time + '</td>')
+          newRow.append $('<td>' + event.name + '</td>')
+          str = JSON.stringify (event.value), `undefined`, 2
+          newRow.append $('<td class = "value">' + str + '</td>')
+          $('#tableOfEvents').append newRow
+
+
+# This method produces a list of all events sorted by time from recordingTracks 
+  $('#listButton').click ->
+    recordingTracksToEventHolder()
+    outputListOfEvents()
+    
+
+
+#get current values of range selecting spinners
 # if the left resp. right boundary is not given, prefix resp. suffix of the list is selected
+  getSpinnerRange = ->
+    from = $('#spinnerFrom').spinner "value"
+    to = $('#spinnerTo').spinner "value"
+    from = if from == null then 1 else from
+    to = if to == null then checkboxCount else to
+    return [from, to]
+#check/uncheck a range of checkboxes based on boolVal = true/false
+  setCheckboxRange = (from, to, boolVal) ->
+    for i in [from..to]
+      name = '#checkbox' + i
+      $(name).prop "checked", boolVal
+# button for checking a range of checkboxes
   $('#checkButton').click ->
-    from = $('#spinnerFrom').spinner "value"
-    to = $('#spinnerTo').spinner "value"
-    from = if from == null then 1 else from
-    to = if to == null then checkboxCount else to
-    for i in [from..to]
-      name = '#checkbox' + i
-      $(name).prop "checked", true
+    [from, to] = getSpinnerRange()
+    setCheckboxRange from, to, true
+#button for unchecking a range of checkboxes
+  $('#uncheckButton').click ->
+    [from, to] = getSpinnerRange()
+    setCheckboxRange from, to, false
 
-#Same as previous but for unchecking
-  $('#uncheckButton').click ->   
-    from = $('#spinnerFrom').spinner "value"
-    to = $('#spinnerTo').spinner "value"
-    from = if from == null then 1 else from
-    to = if to == null then checkboxCount else to
-    for i in [from..to]
-      name = '#checkbox' + i
-      $(name).prop "checked", false
 
-# This shift method shifts the times leaving the events potentially assorted
-#  $('#shiftButton').click ->
-#    shift = $('#spinnerShift').spinner "value"
-#    for i in [1..checkboxCount]
-#      checkboxName = '#checkbox' + i
-#      if $(checkboxName).prop "checked"
-#        itemName = '#item' + i
-#        content = JSON.parse $(itemName).text()
-#        content.time += shift
-#        $(itemName).html '<input type="checkbox" id="checkbox'+i+'">'+JSON.stringify content, `undefined`, 2
-#        $(checkboxName).prop "checked", true
-#
 
 #This shift method sorts the events by time
   $('#shiftButton').click ->
     shift = $('#spinnerShift').spinner "value"
-    eventHolder = []
     for i in [1..checkboxCount]
       checkboxName = '#checkbox' + i
-      itemName = '#item' + i
-      content = JSON.parse $(itemName).text()
       if $(checkboxName).prop "checked"
-        content.time += shift
-      eventHolder.push content
-    eventHolder.sort (a,b) -> return if a.time > b.time then 1 else -1
-    $('#listOfEvents').empty()
-    checkboxCount = 0
-    for j in eventHolder
-        str = JSON.stringify j, `undefined`, 2
-        checkboxCount++
-        $('#listOfEvents').append ('<li id="item' + checkboxCount + '"><input type="checkbox" id="checkbox' + 
-        checkboxCount + '">' + str + '</li>')
+        eventHolder[i-1].time += shift
+    normaliseEventHolder()
+    outputListOfEvents()
         
 #This method parses the changes back into recordingTracks 
   $('#parsebackButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
-      newRecordingTracks = {}
-      for i in [1..checkboxCount]
-        itemName = '#item' + i
-        content = JSON.parse $(itemName).text()
-        if !(content.name of newRecordingTracks)
-          newRecordingTracks[content.name] = []
-        newRecordingTracks[content.name].push
-          time: content.time
-          value: content.value
-      recordingTracks = newRecordingTracks
+      eventHolderToRecordingTracks()
 
+#Delete selected lines
+  $('#deleteButton').click ->
+    offset = 0
+    for i in [1..checkboxCount]
+      checkboxName = '#checkbox' + i
+      if $(checkboxName).prop "checked"
+        eventHolder.splice i-1-offset, 1
+        offset++
+    outputListOfEvents()
 
+#After recording an additional track into recordingTracks,
+#insert it into current track stored in eventHolder at time given by spinnerInsert
+#update recordingTracks accordingly
+  $('#insertButton').click ->
+    #save old track
+    tempEventHolder = eventHolder.slice()
+    #load new track
+    recordingTracksToEventHolder()
+    #shift the new track to the desired time stamp
+    time = $('#spinnerInsert').spinner "value"
+    event.time += time for event in eventHolder
+    #merge old and new tracks
+    eventHolder = eventHolder.concat tempEventHolder
+    normaliseEventHolder()
+    outputListOfEvents()
