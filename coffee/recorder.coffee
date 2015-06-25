@@ -237,8 +237,12 @@ $ ->
     tempEventHolder = eventHolder.slice()
     #load new track
     recordingTracksToEventHolder()
-    #shift the new track to the desired time stamp
+    #shift part of the old track which should take place after the new track
+    normaliseEventHolder()
+    shift = eventHolder[eventHolder.length-1].time
     time = $('#spinnerInsert').spinner "value"
+    event.time += shift for event in tempEventHolder when event.time > time
+    #shift the new track to the desired time stamp
     event.time += time for event in eventHolder
     #merge old and new tracks
     eventHolder = eventHolder.concat tempEventHolder
