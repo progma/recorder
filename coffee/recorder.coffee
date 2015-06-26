@@ -14,6 +14,8 @@ recordingNow = off
 #new global vars, array for events regardless of type and number of them
 eventHolder = []
 checkboxCount = 0
+#array for holding events of the replay window
+timedEvents = []
 
 # The things I track and how to compute them.
 recordingSources =
@@ -96,7 +98,12 @@ $ ->
         time: new Date() - recordingStartTime
         value: this.id
 
+#stops previous replay and starts a new one
   $('#playButton').click ->
+    #clear previous replay
+    clearTimeout event for event in timedEvents
+    timedEvents = []
+    
     myPlaybackMirror.focus()
     $.each recordingTracks, (name, track) ->
       $.map track, (event) ->
@@ -106,7 +113,8 @@ $ ->
                          turtleDiv: $('#turtleSpace').get(0)
                          turtle3dCanvas: $('#turtleCanvas').get(0)
                          evaluationContext: EVALUATION_CONTEXT
-        setTimeout playTheValue, event.time
+        #set timeout for next event and save this
+        timedEvents.push setTimeout playTheValue, event.time
 
   $('#dumpButton').click ->
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
