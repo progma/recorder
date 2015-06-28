@@ -20,12 +20,13 @@
 
     <style> 
 		body { max-width: 800px; margin-left: auto; margin-right: auto; }
-  	 	#eventDiv { max-height: 500px; overflow: scroll }
-  	 	#tableOfEvents { max-height: 300px; overflow: scroll }
+  	#eventDiv { max-height: 500px; overflow: scroll }
+  	#tableOfEvents { max-height: 300px; overflow: scroll }
 	 	.value {text-align: left}
     table, tr, td {border: 1px solid black}
 		td {padding: 6px; text-align: center}
-	 	table {border-collapse: collapse} 
+	 	table {border-collapse: collapse}
+    #insertButton { padding: 5px }
 	</style>
   
   </head>
@@ -53,14 +54,12 @@
     <input id="deleteButton" type="button" value="Delete"> selected lines or
     <input id="shiftButton" type="button" value="Shift"> them by <input id="spinnerShift"> miliseconds
     <br />
-    <input id="insertButton" type="button" value="Insert current track"> 
-    at time <input id="spinnerInsert">
+    <input id="insertButton" type="button" value="Insert current track after selected event"> 
     
     <script> 
       $( "#spinnerTo" ).spinner();
       $( "#spinnerFrom" ).spinner();
       $( "#spinnerShift" ).spinner();
-      $( "#spinnerInsert" ).spinner();
     </script>
     
     <br />
@@ -70,11 +69,14 @@
       <tr><td>No.</td><td>Selected</td><td>Time</td><td>Type of event</td><td>Value</td></tr>
       </table>
 	  </div>
-<!--	
-  <input id="dumpButton" type="button" value="Dump!"/>
+ 
+  
+    <br />
+    <br />
+  
+    <input id="dumpButton" type="button" value="Dump!"/>
     <input id="parseButton" type="button" value="Parse!"/>
     <br />
     <textarea id="dumpArea" rows="25" cols="50"></textarea>
-  --!>
   </body>
 </html>
