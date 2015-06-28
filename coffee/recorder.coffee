@@ -208,14 +208,14 @@ selectState = ->
   if selectedState == this.id
     $('#'+this.id).css 'background-color', 'white'
     selectedState = 0
+    displayState checkboxCount - 1
   else
     $('#'+this.id).css 'background-color', 'yellow'
     if selectedState != 0
       $('#'+selectedState).css 'background-color', 'white'
     selectedState = this.id
+    displayState this.id - 1
 
-   #display the selected state
-   displayState this.id - 1
 
 displayState = (event) ->
   for i in [0..event]
@@ -293,3 +293,5 @@ $ ->
 
 #selecting an event after which to insert new stuff
   $('#tableOfEvents').on 'click', '.clickable', selectState
+
+  $('#tableOfEvents').on 'click', ':checkbox', (event) -> event.stopPropagation()
