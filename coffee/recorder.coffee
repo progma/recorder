@@ -226,6 +226,13 @@ displayState = (event) ->
                                       evaluationContext: EVALUATION_CONTEXT
   myCodeMirror.focus()
 
+upOneEvent = ->
+  alert 'yea you pressed alt + up'
+  return false
+ 
+downOneEvent = ->
+  alert 'yea you pressed alt + down'
+  return false
 
 $ ->
   if EVALUATION_CONTEXT == "turtle3d"
@@ -295,3 +302,6 @@ $ ->
   $('#tableOfEvents').on 'click', '.clickable', selectState
 
   $('#tableOfEvents').on 'click', ':checkbox', (event) -> event.stopPropagation()
+
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_up', upOneEvent
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_down', downOneEvent
