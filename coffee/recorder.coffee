@@ -39,6 +39,9 @@ startRecording = ->
     unless confirm '''You will lose your current recording by starting anew.
                       Are you sure?'''
       return
+  
+  $('#warning').show()
+  
   myCodeMirror.focus()
   recordingTracks = {}
   recordingStartTime = new Date()
@@ -77,12 +80,17 @@ evalCode = ->
                             turtle3dCanvas: $('#turtleCanvas').get(0)
                             evaluationContext: EVALUATION_CONTEXT
 
-#stops previous replay and starts a new one
-playTrack = ->
+#stops previous replay and starts a new one, optionally from selected point
+playTrack = (selectedEvent)->
   #clear previous replay
   clearTimeout event for event in timedEvents
   timedEvents = []
   
+  startTime = 0
+  if selectedEvent > 0
+    displayState selectedEvent, myPlaybackMirror
+    startTime = eventHolder[selectedEvent-1].time
+
   myPlaybackMirror.focus()
   $.each recordingTracks, (name, track) ->
     $.map track, (event) ->
@@ -93,7 +101,8 @@ playTrack = ->
                        turtle3dCanvas: $('#turtleCanvas').get(0)
                        evaluationContext: EVALUATION_CONTEXT
       #set timeout for next event and save this
-      timedEvents.push setTimeout playTheValue, event.time
+      if event.time >= startTime && (selectedEvent == 0 || event.time <= eventHolder[checkboxCount-1].time)
+        timedEvents.push setTimeout playTheValue, event.time if event.time >= startTime
 
 #normalisation function for the eventHolder
 normaliseEventHolder = ->
@@ -203,36 +212,40 @@ insertTrack = ->
   normaliseEventHolder()
   outputListOfEvents()
 
-selectState = ->
+selectState = (id) ->
   #color the selected line
-  if selectedState == this.id
-    $('#'+this.id).css 'background-color', 'white'
+  if selectedState == id
+    $('#'+id).css 'background-color', 'white'
     selectedState = 0
-    displayState checkboxCount - 1
+    displayState checkboxCount - 1, myCodeMirror
   else
-    $('#'+this.id).css 'background-color', 'yellow'
+    $('#'+id).css 'background-color', 'yellow'
     if selectedState != 0
       $('#'+selectedState).css 'background-color', 'white'
-    selectedState = this.id
-    displayState this.id - 1
+    selectedState = id
+    displayState id - 1, myCodeMirror
 
 
-displayState = (event) ->
+displayState = (event, cm) ->
   for i in [0..event]
         playbook[eventHolder[i].name] eventHolder[i].value,
-                                      codeMirror: myCodeMirror
+                                      codeMirror: cm
                                       turtleDiv: $('#turtleSpace').get(0)
                                       turtle3dCanvas: $('#turtleCanvas').get(0)
                                       evaluationContext: EVALUATION_CONTEXT
-  myCodeMirror.focus()
+  cm.focus()
 
-upOneEvent = ->
-  alert 'yea you pressed alt + up'
-  return false
- 
-downOneEvent = ->
-  alert 'yea you pressed alt + down'
-  return false
+forwardOneEvent = ->
+  if selectedState != 0 && checkboxCount != 0
+    i = selectedState - 1
+    i = (i+1) % checkboxCount
+    selectState i + 1
+
+backOneEvent = ->
+  if selectedState != 0 && checkboxCount != 0
+    i = selectedState - 1
+    i = (i+checkboxCount-1) % checkboxCount
+    selectState i + 1
 
 $ ->
   if EVALUATION_CONTEXT == "turtle3d"
@@ -247,10 +260,12 @@ $ ->
   myCodeMirror.setOption 'onCursorActivity', recordCurrentState
   myCodeMirror.setOption 'onScroll', recordCurrentState
 
+  #initially, playback area is hidden
+  $(myPlaybackMirror.getWrapperElement()).hide()
   
-  ### BUTTONS ###
 
-  $('#startButton').click startRecording
+  $('#startButton').click ->
+    startRecording()
 
   $('#evalButton').click evalCode
   $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_c', evalCode
@@ -261,18 +276,23 @@ $ ->
         time: new Date() - recordingStartTime
         value: this.id
 
-  $('#playButton').click playTrack
+  $('#playButton').click ->
+    $(myPlaybackMirror.getWrapperElement()).show()
+    playTrack 0
 
   $('#dumpButton').click ->
+    $('#warning').hide()
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
 		
   $('#parseButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
+      $('#warning').hide()
       recordingTracks = JSON.parse $('#dumpArea').val()
 
 # This button produces a list of all events sorted by time from recordingTracks 
   $('#listButton').click ->
+    $('#warning').hide()
     recordingTracksToEventHolder()
     outputListOfEvents()
 
@@ -292,6 +312,7 @@ $ ->
   $('#parsebackButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
+      $('#warning').hide()
       eventHolderToRecordingTracks()
 
   $('#deleteButton').click deleteEvents
@@ -299,9 +320,22 @@ $ ->
   $('#insertButton').click insertTrack
 
 #selecting an event after which to insert new stuff
-  $('#tableOfEvents').on 'click', '.clickable', selectState
+  $('#tableOfEvents').on 'click', '.clickable', ->
+    selectState this.id
+    $(myPlaybackMirror.getWrapperElement()).hide()
 
   $('#tableOfEvents').on 'click', ':checkbox', (event) -> event.stopPropagation()
 
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_up', upOneEvent
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_down', downOneEvent
+#Attention! Alt+Up shortcut was removed from codemirror.js so it does not interfere
+#codemirror.js was changed on the line 2212 
+#BTW, the Alt+Up shortcut is no longer supported in current CodeMirror version, so an update would solve it
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_up', backOneEvent
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_down', forwardOneEvent
+
+  $('#stopButton').click ->
+    clearTimeout event for event in timedEvents
+    timedEvents = []
+
+  $('#selectButton').click ->
+    $(myPlaybackMirror.getWrapperElement()).show()
+    playTrack selectedState
