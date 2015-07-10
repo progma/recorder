@@ -11,12 +11,12 @@ recordingTracks = undefined
 recordingStartTime = undefined
 recordingNow = off
 
-#new global vars, array for events regardless of type and number of them
+# new global vars, array for events regardless of type and number of them
 eventHolder = []
 checkboxCount = 0
-#array for holding events of the replay window
+# array for holding events of the replay window
 timedEvents = []
-#variable for the number of the currently selected state of the track
+# variable for the number of the currently selected state of the track
 selectedState = 0
 
 # The things I track and how to compute them.
@@ -41,7 +41,9 @@ startRecording = ->
       return
   
   $('#warning').show()
-  
+  $('#selectButton').prop 'disabled', true
+  $('#insertButton').prop 'disabled', false
+
   myCodeMirror.focus()
   recordingTracks = {}
   recordingStartTime = new Date()
@@ -80,9 +82,9 @@ evalCode = ->
                             turtle3dCanvas: $('#turtleCanvas').get(0)
                             evaluationContext: EVALUATION_CONTEXT
 
-#stops previous replay and starts a new one, optionally from selected point
+# stops previous replay and starts a new one, optionally from selected point
 playTrack = (selectedEvent)->
-  #clear previous replay
+  # clear previous replay
   clearTimeout event for event in timedEvents
   timedEvents = []
   
@@ -100,15 +102,15 @@ playTrack = (selectedEvent)->
                        turtleDiv: $('#turtleSpace').get(0)
                        turtle3dCanvas: $('#turtleCanvas').get(0)
                        evaluationContext: EVALUATION_CONTEXT
-      #set timeout for next event and save this
+      # set timeout for next event and save this
       if event.time >= startTime && (selectedEvent == 0 || event.time <= eventHolder[checkboxCount-1].time)
-        timedEvents.push setTimeout playTheValue, event.time if event.time >= startTime
+        timedEvents.push setTimeout playTheValue, event.time - startTime if event.time >= startTime
 
-#normalisation function for the eventHolder
+# normalisation function for the eventHolder
 normaliseEventHolder = ->
   eventHolder.sort (a,b) -> return if a.time > b.time then 1 else -1
 
-#conversion functions between recordingTracks and eventHolder
+# conversion functions between recordingTracks and eventHolder
 recordingTracksToEventHolder = ->
   eventHolder = []
   for own key of recordingTracks
@@ -117,6 +119,7 @@ recordingTracksToEventHolder = ->
           name: key
           time: event.time
           value: event.value
+          selected: false
   normaliseEventHolder()
 
 eventHolderToRecordingTracks = ->
@@ -128,17 +131,27 @@ eventHolderToRecordingTracks = ->
       time: event.time
       value: event.value
 
-#function for creating the html list of events
+# function for creating the html list of events
 outputListOfEvents = ->
   $('#tableOfEvents').empty()
   $('<tr><td>No.</td><td>Selected</td><td>Time</td>
     <td>Type of event</td><td>Value</td></tr>').appendTo $('#tableOfEvents')
   checkboxCount = 0
+  
   for event in eventHolder
         checkboxCount++
+        
         newRow = $('<tr class="clickable" id=' + checkboxCount + '>')
         newRow.append $('<td>' + checkboxCount + '</td>')
-        newRow.append $('<td>').append $('<input>',
+        if event.selected
+          newRow.append $('<td>').append $('<input>',
+          type: "checkbox"
+          id: "checkbox" + checkboxCount
+          checked: true
+          )
+          event.selected = false
+        else
+          newRow.append $('<td>').append $('<input>',
           type: "checkbox"
           id: "checkbox" + checkboxCount
           )
@@ -147,10 +160,10 @@ outputListOfEvents = ->
         str = JSON.stringify (event.value), `undefined`, 2
         newRow.append $('<td class = "value">' + str + '</td>')
         $('#tableOfEvents').append newRow
-   #if something was selected, it is not anymore
+   # if something was selected, it is not anymore
    selectedState = 0
 
-#get current values of range selecting spinners
+# get current values of range selecting spinners
 # if the left resp. right boundary is not given, prefix resp. suffix of the list is selected
 getSpinnerRange = ->
   from = $('#spinnerFrom').spinner "value"
@@ -159,24 +172,25 @@ getSpinnerRange = ->
   to = if to == null then checkboxCount else to
   return [from, to]
 
-#check/uncheck a range of checkboxes based on boolVal = true/false
+# check/uncheck a range of checkboxes based on boolVal = true/false
 setCheckboxRange = (from, to, boolVal) ->
   for i in [from..to]
     name = '#checkbox' + i
     $(name).prop "checked", boolVal
 
-#This shift method shifts selected events and resorts
+# This shift method shifts selected events and resorts
 shiftEvents = ->
   shift = $('#spinnerShift').spinner "value"
   for i in [1..checkboxCount]
     checkboxName = '#checkbox' + i
     if $(checkboxName).prop "checked"
       eventHolder[i-1].time += shift
+      eventHolder[i-1].selected = true
   normaliseEventHolder()
   outputListOfEvents()
       
 
-#Delete selected lines
+# Delete selected lines
 deleteEvents = ->
   offset = 0
   for i in [1..checkboxCount]
@@ -186,34 +200,34 @@ deleteEvents = ->
       offset++
   outputListOfEvents()
 
-#After recording an additional track into recordingTracks,
-#insert it into current track stored in eventHolder at time given by spinnerInsert
-#update recordingTracks accordingly
+# After recording an additional track into recordingTracks,
+# insert it into current track stored in eventHolder at time given by spinnerInsert
+# update recordingTracks accordingly
 insertTrack = ->
-  #compute insertion time, 0 if no event was selected
+  # compute insertion time, 0 if no event was selected
   insertTime = if selectedState == 0 then 0 else eventHolder[selectedState-1].time
 
-  #save old track
+  # save old track
   tempEventHolder = eventHolder.slice()
   
-  #load new track
+  # load new track
   recordingTracksToEventHolder()
   normaliseEventHolder()
   
-  #shift part of the old track which should take place after the new track
+  # shift part of the old track which should take place after the new track
   shift = eventHolder[eventHolder.length-1].time
   event.time += shift for event in tempEventHolder when event.time > insertTime
   
-  #shift the new track to the desired time stamp
+  # shift the new track to the desired time stamp
   event.time += insertTime for event in eventHolder
   
-  #merge old and new tracks
+  # merge old and new tracks
   eventHolder = eventHolder.concat tempEventHolder
   normaliseEventHolder()
   outputListOfEvents()
 
 selectState = (id) ->
-  #color the selected line
+  # color the selected line
   if selectedState == id
     $('#'+id).css 'background-color', 'white'
     selectedState = 0
@@ -233,7 +247,6 @@ displayState = (event, cm) ->
                                       turtleDiv: $('#turtleSpace').get(0)
                                       turtle3dCanvas: $('#turtleCanvas').get(0)
                                       evaluationContext: EVALUATION_CONTEXT
-  cm.focus()
 
 forwardOneEvent = ->
   if selectedState != 0 && checkboxCount != 0
@@ -247,6 +260,15 @@ backOneEvent = ->
     i = (i+checkboxCount-1) % checkboxCount
     selectState i + 1
 
+enableTableButtons = ->
+  $('#parsebackButton').prop 'disabled', false
+  $('#checkButton').prop 'disabled', false
+  $('#uncheckButton').prop 'disabled', false
+  $('#checkAllButton').prop 'disabled', false
+  $('#uncheckAllButton').prop 'disabled', false
+  $('#shiftButton').prop 'disabled', false
+  $('#deleteButton').prop 'disabled', false
+
 $ ->
   if EVALUATION_CONTEXT == "turtle3d"
     $('#turtleSpace').append $('<canvas>', id: 'turtleCanvas')
@@ -257,18 +279,22 @@ $ ->
 
   # Timhle odchytime zatim vsechny aktivity CodeMirror bufferu,
   # ktere nas zajimaji.
-  myCodeMirror.setOption 'onCursorActivity', recordCurrentState
-  myCodeMirror.setOption 'onScroll', recordCurrentState
+  # obsolete code
+  # myCodeMirror.setOption 'onCursorActivity', recordCurrentState
+  # myCodeMirror.setOption 'onScroll', recordCurrentState
+  # New syntax of registering event handlers, version 5.4
+  myCodeMirror.on 'cursorActivity', recordCurrentState
+  myCodeMirror.on 'scroll', recordCurrentState
 
-  #initially, playback area is hidden
+
+  # initially, playback area is hidden
   $(myPlaybackMirror.getWrapperElement()).hide()
   
-
+  
   $('#startButton').click ->
     startRecording()
 
   $('#evalButton').click evalCode
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_c', evalCode
 
   $('#nextButton').add('#prevButton').click ->
     if recordingNow
@@ -282,55 +308,57 @@ $ ->
 
   $('#dumpButton').click ->
     $('#warning').hide()
+    $('#selectButton').prop 'disabled', false
+    $('#insertButton').prop 'disabled', true
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
 		
   $('#parseButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
       $('#warning').hide()
+      $('#insertButton').prop 'disabled', true
+      $('#selectButton').prop 'disabled', false
       recordingTracks = JSON.parse $('#dumpArea').val()
 
-# This button produces a list of all events sorted by time from recordingTracks 
+  # This button produces a list of all events sorted by time from recordingTracks 
   $('#listButton').click ->
     $('#warning').hide()
+    $('#selectButton').prop 'disabled', false
+    $('#insertButton').prop 'disabled', true
     recordingTracksToEventHolder()
     outputListOfEvents()
+    enableTableButtons()
 
-# button for checking a range of checkboxes
   $('#checkButton').click ->
     [from, to] = getSpinnerRange()
     setCheckboxRange from, to, true
 
-#button for unchecking a range of checkboxes
   $('#uncheckButton').click ->
     [from, to] = getSpinnerRange()
     setCheckboxRange from, to, false
 
+  $('#checkAllButton').click ->
+    setCheckboxRange 1, checkboxCount, true
+
+  $('#uncheckAllButton').click ->
+    setCheckboxRange 1, checkboxCount, false
+
   $('#shiftButton').click shiftEvents
 
-#This method parses the changes back into recordingTracks 
+  # This method parses the changes back into recordingTracks 
   $('#parsebackButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
       $('#warning').hide()
+      $('#selectButton').prop 'disabled', false
+      $('#insertButton').prop 'disabled', true
       eventHolderToRecordingTracks()
 
   $('#deleteButton').click deleteEvents
 
-  $('#insertButton').click insertTrack
-
-#selecting an event after which to insert new stuff
-  $('#tableOfEvents').on 'click', '.clickable', ->
-    selectState this.id
-    $(myPlaybackMirror.getWrapperElement()).hide()
-
-  $('#tableOfEvents').on 'click', ':checkbox', (event) -> event.stopPropagation()
-
-#Attention! Alt+Up shortcut was removed from codemirror.js so it does not interfere
-#codemirror.js was changed on the line 2212 
-#BTW, the Alt+Up shortcut is no longer supported in current CodeMirror version, so an update would solve it
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_up', backOneEvent
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_down', forwardOneEvent
+  $('#insertButton').click ->
+    insertTrack()
+    enableTableButtons()
 
   $('#stopButton').click ->
     clearTimeout event for event in timedEvents
@@ -339,3 +367,17 @@ $ ->
   $('#selectButton').click ->
     $(myPlaybackMirror.getWrapperElement()).show()
     playTrack selectedState
+
+  # selecting an event after which to insert new stuff
+  $('#tableOfEvents').on 'click', '.clickable', ->
+    selectState this.id
+    $(myPlaybackMirror.getWrapperElement()).hide()
+
+  $('#tableOfEvents').on 'click', ':checkbox', (event) -> event.stopPropagation()
+
+  #hotkey definitions
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_c', evalCode
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_up', backOneEvent
+  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_down', forwardOneEvent
+
+
