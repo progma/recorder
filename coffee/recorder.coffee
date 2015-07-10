@@ -19,6 +19,7 @@ timedEvents = []
 # variable for the number of the currently selected state of the track
 selectedState = 0
 
+
 # The things I track and how to compute them.
 recordingSources =
   bufferContents: ->
@@ -33,6 +34,7 @@ recordingSources =
 
   scrollPosition: ->
     myCodeMirror.getScrollInfo()
+
 
 startRecording = ->
   if recordingNow
@@ -253,21 +255,37 @@ forwardOneEvent = ->
     i = selectedState - 1
     i = (i+1) % checkboxCount
     selectState i + 1
-
+ 
 backOneEvent = ->
   if selectedState != 0 && checkboxCount != 0
     i = selectedState - 1
     i = (i+checkboxCount-1) % checkboxCount
     selectState i + 1
 
+hotkeyEvents = [
+  ['keydown.alt_c', evalCode],
+  ['keydown.alt_up', backOneEvent],
+  ['keydown.alt_down', forwardOneEvent]
+]
+
+tableButtons = [
+  '#parsebackButton',
+  '#checkButton',
+  '#uncheckButton',
+  '#checkAllButton',
+  '#uncheckAllButton',
+  '#shiftButton',
+  '#deleteButton'
+]
+
 enableTableButtons = ->
-  $('#parsebackButton').prop 'disabled', false
-  $('#checkButton').prop 'disabled', false
-  $('#uncheckButton').prop 'disabled', false
-  $('#checkAllButton').prop 'disabled', false
-  $('#uncheckAllButton').prop 'disabled', false
-  $('#shiftButton').prop 'disabled', false
-  $('#deleteButton').prop 'disabled', false
+  for button in tableButtons
+    $(button).prop 'disabled', false
+
+setupAfterDumpOrParse = ->
+  $('#warning').hide()
+  $('#selectButton').prop 'disabled', false
+  $('#insertButton').prop 'disabled', true
 
 $ ->
   if EVALUATION_CONTEXT == "turtle3d"
@@ -307,24 +325,18 @@ $ ->
     playTrack 0
 
   $('#dumpButton').click ->
-    $('#warning').hide()
-    $('#selectButton').prop 'disabled', false
-    $('#insertButton').prop 'disabled', true
+    setupAfterDumpOrParse()
     $('#dumpArea').val JSON.stringify recordingTracks, `undefined`, 2
 		
   $('#parseButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
-      $('#warning').hide()
-      $('#insertButton').prop 'disabled', true
-      $('#selectButton').prop 'disabled', false
+      setupAfterDumpOrParse()
       recordingTracks = JSON.parse $('#dumpArea').val()
 
   # This button produces a list of all events sorted by time from recordingTracks 
   $('#listButton').click ->
-    $('#warning').hide()
-    $('#selectButton').prop 'disabled', false
-    $('#insertButton').prop 'disabled', true
+    setupAfterDumpOrParse()
     recordingTracksToEventHolder()
     outputListOfEvents()
     enableTableButtons()
@@ -349,9 +361,7 @@ $ ->
   $('#parsebackButton').click ->
     if confirm '''Parsing in a new script will delete the old one.
                   Are you sure?'''
-      $('#warning').hide()
-      $('#selectButton').prop 'disabled', false
-      $('#insertButton').prop 'disabled', true
+      setupAfterDumpOrParse()
       eventHolderToRecordingTracks()
 
   $('#deleteButton').click deleteEvents
@@ -376,8 +386,7 @@ $ ->
   $('#tableOfEvents').on 'click', ':checkbox', (event) -> event.stopPropagation()
 
   #hotkey definitions
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_c', evalCode
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_up', backOneEvent
-  $(document).add(myCodeMirror.getInputField()).bind 'keydown.alt_down', forwardOneEvent
+  for key in hotkeyEvents
+    $(document).add(myCodeMirror.getInputField()).bind key[0], key[1]
 
 
